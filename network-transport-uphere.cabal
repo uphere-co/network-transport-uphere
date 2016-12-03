@@ -35,3 +35,25 @@ Library
   ghc-options:     -Wall -fno-warn-unused-do-bind
   HS-Source-Dirs:  src
 
+Executable server
+  Main-is:         server.hs
+  hs-source-dirs:  prodtest
+  ghc-options:     -Wall -O2 -threaded -funbox-strict-fields -fno-warn-unused-do-bind
+  ghc-prof-options: -auto-all
+  build-depends:   base,
+                   containers,
+                   network-transport,
+                   --
+                   network-transport-uphere
+                   
+Executable client
+  Main-is:         client.hs
+  hs-source-dirs:  prodtest
+  ghc-options:     -Wall -O2 -threaded -funbox-strict-fields -fno-warn-unused-do-bind
+  ghc-prof-options: -auto-all
+  build-depends:   base,
+                   bytestring,
+                   network-transport,
+                   --
+                   network-transport-uphere
+                   
