@@ -42,6 +42,7 @@ Executable server
   ghc-prof-options: -auto-all
   build-depends:   base,
                    containers,
+                   either,
                    network-transport,
                    --
                    network-transport-uphere

@@ -1,5 +1,6 @@
 { mkDerivation, base, bytestring, containers, data-accessor
-, network, network-transport, network-transport-tests, stdenv
+, network, network-transport, network-transport-tests, either
+, stdenv
 }:
 mkDerivation {
   pname = "network-transport-uphere";
@@ -8,8 +9,8 @@ mkDerivation {
   libraryHaskellDepends = [
     base bytestring containers data-accessor network network-transport
   ];
-  testHaskellDepends = [
-    base network network-transport network-transport-tests
+  executableHaskellDepends = [
+    base network-transport either
   ];
   homepage = "http://haskell-distributed.github.com";
   description = "UpHere specific network transport";
