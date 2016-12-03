@@ -7,8 +7,8 @@ import System.Environment
 
 main :: IO ()
 main = do
-  [host,port]     <- getArgs
-  let dhpp = DHPP (host,port) ("127.0.0.1","5555")
+  [hostg,portg,hostl,portl]     <- getArgs
+  let dhpp = DHPP (hostg,portg) (hostl,portl)
   serverDone      <- newEmptyMVar
   Right transport <- createTransport dhpp defaultTCPParameters
   Right endpoint  <- newEndPoint transport

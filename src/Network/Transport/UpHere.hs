@@ -125,7 +125,7 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS (concat)
 import qualified Data.ByteString.Char8 as BSC (pack, unpack)
 import Data.Bits (shiftL, (.|.))
-import Data.Maybe (isJust,listToMaybe)
+import Data.Maybe (isJust)
 import Data.Word (Word32)
 import Data.Set (Set)
 import qualified Data.Set as Set
@@ -1671,7 +1671,9 @@ socketToEndPoint (EndPointAddress ourAddress) theirAddress reuseAddr noDelay kee
       Nothing  -> throwIO (failed . userError $ "Could not parse")
       Just dec -> return dec
     addr:_ <- mapIOException invalidAddress $
-      N.getAddrInfo Nothing (Just hostg) (Just portg)
+      if EndPointAddress ourAddress == theirAddress
+      then N.getAddrInfo Nothing (Just hostg) (Just portg)
+      else N.getAddrInfo Nothing (Just hostl) (Just portl)
     bracketOnError (createSocket addr) tryCloseSocket $ \sock -> do
       when reuseAddr $
         mapIOException failed $ N.setSocketOption sock N.ReuseAddr 1

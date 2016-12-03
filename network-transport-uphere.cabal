@@ -37,7 +37,7 @@ Library
 
 Executable server
   Main-is:         server.hs
-  hs-source-dirs:  prodtest
+  hs-source-dirs:  exe
   ghc-options:     -Wall -O2 -threaded -funbox-strict-fields -fno-warn-unused-do-bind
   ghc-prof-options: -auto-all
   build-depends:   base,
@@ -48,7 +48,7 @@ Executable server
                    
 Executable client
   Main-is:         client.hs
-  hs-source-dirs:  prodtest
+  hs-source-dirs:  exe
   ghc-options:     -Wall -O2 -threaded -funbox-strict-fields -fno-warn-unused-do-bind
   ghc-prof-options: -auto-all
   build-depends:   base,

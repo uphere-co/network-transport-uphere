@@ -8,8 +8,8 @@ import Control.Monad
 
 main :: IO ()
 main = do
-  [host, port, serverAddr] <- getArgs
-  let dhpp = DHPP (host,port) ("127.0.0.1","3333")
+  [hostg, portg, hostl, portl, serverAddr] <- getArgs
+  let dhpp = DHPP (hostg,portg) (hostl,portl)
   Right transport <- createTransport dhpp defaultTCPParameters
   Right endpoint <- newEndPoint transport
   print (address endpoint)
