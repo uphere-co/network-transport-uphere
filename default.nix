@@ -14,4 +14,5 @@ mkDerivation {
   homepage = "http://haskell-distributed.github.com";
   description = "UpHere specific network transport";
   license = stdenv.lib.licenses.bsd3;
+  doCheck = false;
 }

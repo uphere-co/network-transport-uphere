@@ -60,11 +60,7 @@ import Network.Transport.Internal
   , asyncWhenCancelled
   )
 
-#ifdef USE_MOCK_NETWORK
-import qualified Network.Transport.UpHere.Mock.Socket as N
-#else
 import qualified Network.Socket as N
-#endif
   ( HostName
   , ServiceName
   , Socket
@@ -82,11 +78,7 @@ import qualified Network.Socket as N
   , AddrInfo
   )
 
-#ifdef USE_MOCK_NETWORK
-import Network.Transport.UpHere.Mock.Socket.ByteString (sendMany)
-#else
 import Network.Socket.ByteString (sendMany)
-#endif
 
 import Control.Concurrent
   ( forkIO
