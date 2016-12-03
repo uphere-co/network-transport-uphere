@@ -522,7 +522,7 @@ createTransportExposeInternals
   -> TCPParameters
   -> IO (Either IOException (Transport, TransportInternals))
 createTransportExposeInternals dhpp params = do
-    let (host,port) = globalPair dhpp
+    let (host,port) = localPair dhpp
     state <- newMVar . TransportValid $ ValidTransportState
       { _localEndPoints = Map.empty
       , _nextEndPointId = 0
@@ -539,7 +539,7 @@ createTransportExposeInternals dhpp params = do
        -- construct a transport. So we tie a recursive knot.
        (port', result) <- do
          let transport = TCPTransport { transportState  = state
-                                      , transportDHPP   = dhpp
+                                      , transportDHPP   = dhpp { localPair = (host,port') }
                                       , transportHost   = host
                                       , transportPort   = port'
                                       , transportParams = params
@@ -1664,16 +1664,21 @@ socketToEndPoint :: EndPointAddress -- ^ Our address
                  -> Maybe Int       -- ^ Timeout for connect
                  -> IO (Either (TransportError ConnectErrorCode)
                                (N.Socket, ConnectionRequestResponse))
-socketToEndPoint (EndPointAddress ourAddress) theirAddress reuseAddr noDelay keepAlive
+socketToEndPoint ourAddress'@(EndPointAddress ourAddress) theirAddress reuseAddr noDelay keepAlive
                  mUserTimeout timeout =
   try $ do
     (DHPP (hostg,portg) (hostl,portl), theirEndPointId) <- case decodeEndPointAddress theirAddress of
       Nothing  -> throwIO (failed . userError $ "Could not parse")
       Just dec -> return dec
+    (DHPP (hostg0,portg0) (hostl0,portl0), ourEndPointId) <- case decodeEndPointAddress ourAddress' of
+      Nothing  -> throwIO (failed . userError $ "Could not parse")
+      Just dec -> return dec
+
+      
     addr:_ <- mapIOException invalidAddress $
-      if EndPointAddress ourAddress == theirAddress
-      then N.getAddrInfo Nothing (Just hostg) (Just portg)
-      else N.getAddrInfo Nothing (Just hostl) (Just portl)
+      if hostg == hostg0 && hostl == hostl0 
+      then N.getAddrInfo Nothing (Just hostl) (Just portl)
+      else N.getAddrInfo Nothing (Just hostg) (Just portg)
     bracketOnError (createSocket addr) tryCloseSocket $ \sock -> do
       when reuseAddr $
         mapIOException failed $ N.setSocketOption sock N.ReuseAddr 1
