@@ -1,24 +1,24 @@
-Name:          network-transport-tcp
-Version:       0.5.1
+Name:          network-transport-uphere
+Version:       0.0
 Cabal-Version: >=1.10
 Build-Type:    Simple
 License:       BSD3
 License-file:  LICENSE
-Copyright:     Well-Typed LLP, Tweag I/O Limited
-Author:        Duncan Coutts, Nicolas Wu, Edsko de Vries
-maintainer:    Facundo Domínguez <facundo.dominguez@tweag.io>
+Copyright:     Well-Typed LLP, Tweag I/O Limited, UpHere Inc
+Author:        Duncan Coutts, Nicolas Wu, Edsko de Vries, Ian-Woo Kim
+maintainer:    Ian-Woo Kim <ian@uphere.ai>
 Stability:     experimental
 Homepage:      http://haskell-distributed.github.com
 Bug-Reports:   https://cloud-haskell.atlassian.net/browse/NTTCP
-Synopsis:      TCP instantiation of Network.Transport
-Description:   TCP instantiation of Network.Transport
+Synopsis:      UpHere specific network transport
+Description:   UpHere specific network transport
 Tested-With:   GHC==7.6.3 GHC==7.8.4 GHC==7.10.3
 Category:      Network
 extra-source-files: ChangeLog
 
 Source-Repository head
   Type:     git
-  Location: https://github.com/haskell-distributed/network-transport-tcp
+  Location: https://github.com/uphere-co/network-transport-uphere
 
 Flag use-mock-network
   Description:     Use mock network implementation (for testing)
@@ -31,8 +31,8 @@ Library
                    containers >= 0.4 && < 0.6,
                    bytestring >= 0.9 && < 0.11,
                    network >= 2.6.2 && < 2.7
-  Exposed-modules: Network.Transport.TCP,
-                   Network.Transport.TCP.Internal
+  Exposed-modules: Network.Transport.UpHere,
+                   Network.Transport.UpHere.Internal
   Default-Extensions: CPP
   default-language: Haskell2010
   Other-Extensions:   RecursiveDo
@@ -40,8 +40,8 @@ Library
   HS-Source-Dirs:  src
   If flag(use-mock-network)
     CPP-Options:     -DUSE_MOCK_NETWORK
-    Exposed-modules: Network.Transport.TCP.Mock.Socket
-                     Network.Transport.TCP.Mock.Socket.ByteString
+    Exposed-modules: Network.Transport.UpHere.Mock.Socket
+                     Network.Transport.UpHere.Mock.Socket.ByteString
 
 Test-Suite TestTCP 
   Type:            exitcode-stdio-1.0
@@ -50,7 +50,7 @@ Test-Suite TestTCP
                    network-transport-tests >= 0.2.1.0 && < 0.3,
                    network >= 2.3 && < 2.7,
                    network-transport >= 0.4.1.0 && < 0.5,
-                   network-transport-tcp
+                   network-transport-uphere
   ghc-options:     -threaded -rtsopts -with-rtsopts=-N
   HS-Source-Dirs:  tests
   default-extensions:      CPP,
@@ -70,7 +70,7 @@ Test-Suite TestQC
                     QuickCheck,
                     HUnit,
                     network-transport,
-                    network-transport-tcp,
+                    network-transport-uphere,
                     containers,
                     bytestring,
                     pretty,

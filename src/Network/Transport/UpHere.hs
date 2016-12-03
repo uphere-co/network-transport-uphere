@@ -14,7 +14,7 @@
 {-# LANGUAGE RecursiveDo #-}
 {-# LANGUAGE TupleSections #-}
 
-module Network.Transport.TCP
+module Network.Transport.UpHere
   ( -- * Main API
     createTransport
   , TCPParameters(..)
@@ -43,7 +43,7 @@ import Prelude hiding
   )
 
 import Network.Transport
-import Network.Transport.TCP.Internal
+import Network.Transport.UpHere.Internal
   ( forkServer
   , recvWithLength
   , recvInt32
@@ -61,7 +61,7 @@ import Network.Transport.Internal
   )
 
 #ifdef USE_MOCK_NETWORK
-import qualified Network.Transport.TCP.Mock.Socket as N
+import qualified Network.Transport.UpHere.Mock.Socket as N
 #else
 import qualified Network.Socket as N
 #endif
@@ -83,7 +83,7 @@ import qualified Network.Socket as N
   )
 
 #ifdef USE_MOCK_NETWORK
-import Network.Transport.TCP.Mock.Socket.ByteString (sendMany)
+import Network.Transport.UpHere.Mock.Socket.ByteString (sendMany)
 #else
 import Network.Socket.ByteString (sendMany)
 #endif

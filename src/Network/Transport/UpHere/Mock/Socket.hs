@@ -1,5 +1,5 @@
 {-# LANGUAGE EmptyDataDecls #-}
-module Network.Transport.TCP.Mock.Socket
+module Network.Transport.UpHere.Mock.Socket
   ( -- * Types
     HostName
   , ServiceName

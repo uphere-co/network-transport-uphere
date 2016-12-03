@@ -1,4 +1,4 @@
-module Network.Transport.TCP.Mock.Socket.ByteString
+module Network.Transport.UpHere.Mock.Socket.ByteString
   ( sendMany
   , recv
   ) where
@@ -7,7 +7,7 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString as BSS (pack, foldl)
 import Data.Word (Word8)
 import Control.Applicative ((<$>))
-import Network.Transport.TCP.Mock.Socket
+import Network.Transport.UpHere.Mock.Socket
 
 sendMany :: Socket -> [ByteString] -> IO ()
 sendMany sock = mapM_ (bsMapM_ (writeSocket sock . Payload))

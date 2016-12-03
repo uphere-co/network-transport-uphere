@@ -12,7 +12,7 @@ import Prelude hiding
 #endif
   )
 import Network.Transport
-import Network.Transport.TCP ( createTransport
+import Network.Transport.UpHere ( createTransport
                              , createTransportExposeInternals
                              , TransportInternals(..)
                              , encodeEndPointAddress
@@ -34,7 +34,7 @@ import Control.Concurrent.MVar ( MVar
 import Control.Monad (replicateM, guard, forM_, replicateM_, when)
 import Control.Applicative ((<$>))
 import Control.Exception (throwIO, try, SomeException)
-import Network.Transport.TCP ( ControlHeader(..)
+import Network.Transport.UpHere ( ControlHeader(..)
                              , ConnectionRequestResponse(..)
                              , socketToEndPoint
                              )
@@ -44,10 +44,10 @@ import Network.Transport.Internal ( encodeInt32
                                   , tryIO
                                   , void
                                   )
-import Network.Transport.TCP.Internal (recvInt32, forkServer, recvWithLength)
+import Network.Transport.UpHere.Internal (recvInt32, forkServer, recvWithLength)
 
 #ifdef USE_MOCK_NETWORK
-import qualified Network.Transport.TCP.Mock.Socket as N
+import qualified Network.Transport.UpHere.Mock.Socket as N
 #else
 import qualified Network.Socket as N
 #endif
@@ -60,7 +60,7 @@ import qualified Network.Socket as N
   )
 
 #ifdef USE_MOCK_NETWORK
-import Network.Transport.TCP.Mock.Socket.ByteString (sendMany)
+import Network.Transport.UpHere.Mock.Socket.ByteString (sendMany)
 #else
 import Network.Socket.ByteString (sendMany)
 #endif

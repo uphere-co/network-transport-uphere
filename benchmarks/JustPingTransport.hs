@@ -18,7 +18,7 @@ import qualified Data.ByteString as BS
 import qualified Network.Socket.ByteString as NBS
 import Data.Time (getCurrentTime, diffUTCTime, NominalDiffTime)
 import Network.Transport
-import Network.Transport.TCP
+import Network.Transport.UpHere
 
 main :: IO ()
 main = do

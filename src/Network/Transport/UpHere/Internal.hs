@@ -1,5 +1,5 @@
 -- | Utility functions for TCP sockets
-module Network.Transport.TCP.Internal
+module Network.Transport.UpHere.Internal
   ( forkServer
   , recvWithLength
   , recvExact
@@ -14,7 +14,7 @@ import Prelude hiding (catch)
 import Network.Transport.Internal (decodeInt32, void, tryIO, forkIOWithUnmask)
 
 #ifdef USE_MOCK_NETWORK
-import qualified Network.Transport.TCP.Mock.Socket as N
+import qualified Network.Transport.UpHere.Mock.Socket as N
 #else
 import qualified Network.Socket as N
 #endif
@@ -38,7 +38,7 @@ import qualified Network.Socket as N
   )
 
 #ifdef USE_MOCK_NETWORK
-import qualified Network.Transport.TCP.Mock.Socket.ByteString as NBS (recv)
+import qualified Network.Transport.UpHere.Mock.Socket.ByteString as NBS (recv)
 #else
 import qualified Network.Socket.ByteString as NBS (recv)
 #endif

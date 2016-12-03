@@ -55,12 +55,12 @@ import qualified Data.Set as Set
 import GHC.Stack (currentCallStack, renderStack)
 
 import Network.Transport
-import Network.Transport.TCP
+import Network.Transport.UpHere
   ( createTransportExposeInternals
   , defaultTCPParameters
   , TransportInternals(socketBetween)
   )
-import Network.Transport.TCP.Mock.Socket (Socket, scheduleReadAction, sClose)
+import Network.Transport.UpHere.Mock.Socket (Socket, scheduleReadAction, sClose)
 
 --------------------------------------------------------------------------------
 -- Script infrastructure                                                      --
