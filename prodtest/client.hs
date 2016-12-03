@@ -9,7 +9,8 @@ import Control.Monad
 main :: IO ()
 main = do
   [host, port, serverAddr] <- getArgs
-  Right transport <- createTransport host port defaultTCPParameters
+  let dhpp = DHPP (host,port) (host,port)
+  Right transport <- createTransport dhpp defaultTCPParameters
   Right endpoint <- newEndPoint transport
   print (address endpoint)
   let addr = EndPointAddress (pack serverAddr)

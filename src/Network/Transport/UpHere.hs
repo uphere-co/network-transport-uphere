@@ -1,3 +1,6 @@
+{-# LANGUAGE RecursiveDo #-}
+{-# LANGUAGE TupleSections #-}
+
 -- | TCP implementation of the transport layer.
 --
 -- The TCP implementation guarantees that only a single TCP connection (socket)
@@ -11,8 +14,6 @@
 -- 'Network.Socket.withSocketsDo' in their main function for Windows
 -- compatibility (see "Network.Socket").
 
-{-# LANGUAGE RecursiveDo #-}
-{-# LANGUAGE TupleSections #-}
 
 module Network.Transport.UpHere
   ( -- * Main API
@@ -31,8 +32,9 @@ module Network.Transport.UpHere
   , firstNonReservedHeavyweightConnectionId
   , socketToEndPoint
   , LightweightConnectionId
+  , DualHostPortPair(..)
     -- * Design notes
-    -- $design
+    -- $design    
   ) where
 
 import Prelude hiding
@@ -123,7 +125,7 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS (concat)
 import qualified Data.ByteString.Char8 as BSC (pack, unpack)
 import Data.Bits (shiftL, (.|.))
-import Data.Maybe (isJust)
+import Data.Maybe (isJust,listToMaybe)
 import Data.Word (Word32)
 import Data.Set (Set)
 import qualified Data.Set as Set
@@ -255,9 +257,16 @@ import qualified System.Timeout (timeout)
 --   about the state (ValidTransportState, ValidLocalEndPointState,
 --   ValidRemoteEndPointState).
 
+type HostPortPair = (N.HostName,N.ServiceName)
+
+data DualHostPortPair = DHPP { globalPair :: HostPortPair
+                             , localPair :: HostPortPair }
+                      deriving (Show,Read)
+
 data TCPTransport = TCPTransport
-  { transportHost   :: !N.HostName
-  , transportPort   :: !N.ServiceName
+  { transportDHPP   :: DualHostPortPair
+  , transportHost   :: !N.HostName
+  , transportPort   :: !N.ServiceName              
   , transportState  :: !(MVar TransportState)
   , transportParams :: !TCPParameters
   }
@@ -499,21 +508,21 @@ data TransportInternals = TransportInternals
 -- Top-level functionality                                                    --
 --------------------------------------------------------------------------------
 
+
 -- | Create a TCP transport
-createTransport :: N.HostName
-                -> N.ServiceName
+createTransport :: DualHostPortPair
                 -> TCPParameters
                 -> IO (Either IOException Transport)
-createTransport host port params =
-  either Left (Right . fst) <$> createTransportExposeInternals host port params
+createTransport dhpp params =
+  either Left (Right . fst) <$> createTransportExposeInternals dhpp params
 
 -- | You should probably not use this function (used for unit testing only)
 createTransportExposeInternals
-  :: N.HostName
-  -> N.ServiceName
+  :: DualHostPortPair
   -> TCPParameters
   -> IO (Either IOException (Transport, TransportInternals))
-createTransportExposeInternals host port params = do
+createTransportExposeInternals dhpp params = do
+    let (host,port) = globalPair dhpp
     state <- newMVar . TransportValid $ ValidTransportState
       { _localEndPoints = Map.empty
       , _nextEndPointId = 0
@@ -530,6 +539,7 @@ createTransportExposeInternals host port params = do
        -- construct a transport. So we tie a recursive knot.
        (port', result) <- do
          let transport = TCPTransport { transportState  = state
+                                      , transportDHPP   = dhpp
                                       , transportHost   = host
                                       , transportPort   = port'
                                       , transportParams = params
@@ -624,12 +634,12 @@ apiNewEndPoint transport =
 -- | Connnect to an endpoint
 apiConnect :: TCPParameters    -- ^ Parameters
            -> LocalEndPoint    -- ^ Local end point
-           -> EndPointAddress  -- ^ Remote address
+           -> EndPointAddress  -- ^ Remote address              
            -> Reliability      -- ^ Reliability (ignored)
            -> ConnectHints     -- ^ Hints
            -> IO (Either (TransportError ConnectErrorCode) Connection)
 apiConnect params ourEndPoint theirAddress _reliability hints =
-  try . asyncWhenCancelled close $
+  try . asyncWhenCancelled close $ do
     if localAddress ourEndPoint == theirAddress
       then connectToSelf ourEndPoint
       else do
@@ -783,9 +793,7 @@ handleConnectionRequest transport sock = handle handleException $ do
       N.setSocketOption sock N.UserTimeout
     ourEndPointId <- recvInt32 sock
     theirAddress  <- EndPointAddress . BS.concat <$> recvWithLength sock
-    let ourAddress = encodeEndPointAddress (transportHost transport)
-                                           (transportPort transport)
-                                           ourEndPointId
+    let ourAddress = encodeEndPointAddress (transportDHPP transport) ourEndPointId
     ourEndPoint <- withMVar (transportState transport) $ \st -> case st of
       TransportValid vst ->
         case vst ^. localEndPointAt ourAddress of
@@ -1423,9 +1431,7 @@ createLocalEndPoint transport = do
     modifyMVar (transportState transport) $ \st -> case st of
       TransportValid vst -> do
         let ix   = vst ^. nextEndPointId
-        let addr = encodeEndPointAddress (transportHost transport)
-                                         (transportPort transport)
-                                         ix
+        let addr = encodeEndPointAddress (transportDHPP transport) ix
         let localEndPoint = LocalEndPoint { localAddress  = addr
                                           , localChannel  = chan
                                           , localState    = state
@@ -1454,7 +1460,7 @@ removeRemoteEndPoint (ourEndPoint, theirEndPoint) =
             if remoteId remoteEndPoint' == remoteId theirEndPoint
               then return
                 ( LocalEndPointValid
-                . (localConnectionTo (remoteAddress theirEndPoint) ^= Nothing)
+                . (localConnectionTo theirAddress ^= Nothing)
                 $ vst
                 )
               else return st
@@ -1661,11 +1667,11 @@ socketToEndPoint :: EndPointAddress -- ^ Our address
 socketToEndPoint (EndPointAddress ourAddress) theirAddress reuseAddr noDelay keepAlive
                  mUserTimeout timeout =
   try $ do
-    (host, port, theirEndPointId) <- case decodeEndPointAddress theirAddress of
+    (DHPP (hostg,portg) (hostl,portl), theirEndPointId) <- case decodeEndPointAddress theirAddress of
       Nothing  -> throwIO (failed . userError $ "Could not parse")
       Just dec -> return dec
     addr:_ <- mapIOException invalidAddress $
-      N.getAddrInfo Nothing (Just host) (Just port)
+      N.getAddrInfo Nothing (Just hostg) (Just portg)
     bracketOnError (createSocket addr) tryCloseSocket $ \sock -> do
       when reuseAddr $
         mapIOException failed $ N.setSocketOption sock N.ReuseAddr 1
@@ -1696,24 +1702,29 @@ socketToEndPoint (EndPointAddress ourAddress) theirAddress reuseAddr noDelay kee
     timeoutError          = TransportError ConnectTimeout "Timed out"
 
 -- | Encode end point address
-encodeEndPointAddress :: N.HostName
-                      -> N.ServiceName
+encodeEndPointAddress :: DualHostPortPair
                       -> EndPointId
                       -> EndPointAddress
-encodeEndPointAddress host port ix = EndPointAddress . BSC.pack $
-  host ++ ":" ++ port ++ ":" ++ show ix
+encodeEndPointAddress dhpp ix = EndPointAddress . BSC.pack $
+  hostg ++ ":" ++ portg ++ ":" ++ hostl ++ ":" ++ portl ++ ":" ++ show ix
+  where (hostg,portg) = globalPair dhpp
+        (hostl,portl) = localPair dhpp
 
+        
 -- | Decode end point address
 decodeEndPointAddress :: EndPointAddress
-                      -> Maybe (N.HostName, N.ServiceName, EndPointId)
+                      -> Maybe (DualHostPortPair, EndPointId)
 decodeEndPointAddress (EndPointAddress bs) =
-  case splitMaxFromEnd (== ':') 2 $ BSC.unpack bs of
-    [host, port, endPointIdStr] ->
+  case splitMaxFromEnd (== ':') 4 $ BSC.unpack bs of
+    [hostg, portg, hostl, portl , endPointIdStr] ->
       case reads endPointIdStr of
-        [(endPointId, "")] -> Just (host, port, endPointId)
+        [(endPointId, "")] -> Just (DHPP (hostg,portg) (hostl,portl), endPointId)
         _                  -> Nothing
     _ ->
       Nothing
+
+
+
 
 -- | Construct a ConnectionId
 createConnectionId :: HeavyweightConnectionId

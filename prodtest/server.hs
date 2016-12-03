@@ -8,8 +8,9 @@ import System.Environment
 main :: IO ()
 main = do
   [host,port]     <- getArgs
+  let dhpp = DHPP (host,port) (host,port)
   serverDone      <- newEmptyMVar
-  Right transport <- createTransport host port defaultTCPParameters
+  Right transport <- createTransport dhpp defaultTCPParameters
   Right endpoint  <- newEndPoint transport
   forkIO $ echoServer endpoint serverDone
   putStrLn $ "Echo server started at " ++ show (address endpoint)
