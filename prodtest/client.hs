@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 import Network.Transport
-import Network.Transport.UpHere (createTransport, defaultTCPParameters)
+import Network.Transport.UpHere (createTransport, defaultTCPParameters, DualHostPortPair(..))
 import System.Environment
 import Data.ByteString.Char8
 import Control.Monad
@@ -9,7 +9,7 @@ import Control.Monad
 main :: IO ()
 main = do
   [host, port, serverAddr] <- getArgs
-  let dhpp = DHPP (host,port) (host,port)
+  let dhpp = DHPP (host,port) ("127.0.0.1","3333")
   Right transport <- createTransport dhpp defaultTCPParameters
   Right endpoint <- newEndPoint transport
   print (address endpoint)

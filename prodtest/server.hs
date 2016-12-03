@@ -1,5 +1,5 @@
 import Network.Transport
-import Network.Transport.UpHere (createTransport, defaultTCPParameters)
+import Network.Transport.UpHere (createTransport, defaultTCPParameters, DualHostPortPair(..))
 import Control.Concurrent
 import Data.Map
 import Control.Exception
@@ -8,7 +8,7 @@ import System.Environment
 main :: IO ()
 main = do
   [host,port]     <- getArgs
-  let dhpp = DHPP (host,port) (host,port)
+  let dhpp = DHPP (host,port) ("127.0.0.1","5555")
   serverDone      <- newEmptyMVar
   Right transport <- createTransport dhpp defaultTCPParameters
   Right endpoint  <- newEndPoint transport
