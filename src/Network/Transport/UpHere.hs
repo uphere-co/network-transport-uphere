@@ -1676,7 +1676,7 @@ socketToEndPoint ourAddress'@(EndPointAddress ourAddress) theirAddress reuseAddr
 
       
     addr:_ <- mapIOException invalidAddress $
-      if hostg == hostg0 && hostl == hostl0 
+      if hostg == hostg0
       then N.getAddrInfo Nothing (Just hostl) (Just portl)
       else N.getAddrInfo Nothing (Just hostg) (Just portg)
     bracketOnError (createSocket addr) tryCloseSocket $ \sock -> do
