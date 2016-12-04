@@ -5,7 +5,7 @@ let
   inherit (nixpkgs) pkgs;
 
   f = { mkDerivation, base, bytestring, containers, data-accessor
-      , network, network-transport, network-transport-tests, either
+      , network, network-simple, network-transport, network-transport-tests, either
       , stdenv
       , cabal-install
       , distributed-process
@@ -15,7 +15,7 @@ let
         version = "0.0";
         src = ./.;
         libraryHaskellDepends = [
-          base bytestring containers data-accessor network network-transport
+          base bytestring containers data-accessor network network-simple network-transport
         ];
         executableHaskellDepends = [
           base network-transport either distributed-process

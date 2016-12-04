@@ -69,6 +69,7 @@ Executable broadcaster-server
                    bytestring,
                    distributed-process,
                    either,
+                   network-simple,
                    network-transport,
                    stm,
                    --
@@ -83,6 +84,7 @@ Executable broadcaster-client
                    binary,
                    bytestring,
                    distributed-process,
+                   network-simple,
                    network-transport,
                    --
                    network-transport-uphere
