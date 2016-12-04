@@ -58,3 +58,33 @@ Executable client
                    --
                    network-transport-uphere
                    
+
+Executable broadcaster-server
+  Main-is:         broadcaster-server.hs
+  hs-source-dirs:  cloud-haskell
+  ghc-options:     -Wall -O2 -threaded -funbox-strict-fields -fno-warn-unused-do-bind
+  ghc-prof-options: -auto-all
+  build-depends:   base,
+                   binary,
+                   bytestring,
+                   distributed-process,
+                   either,
+                   network-transport,
+                   stm,
+                   --
+                   network-transport-uphere
+                   
+Executable broadcaster-client
+  Main-is:         broadcaster-client.hs
+  hs-source-dirs:  cloud-haskell
+  ghc-options:     -Wall -O2 -threaded -funbox-strict-fields -fno-warn-unused-do-bind
+  ghc-prof-options: -auto-all
+  build-depends:   base,
+                   binary,
+                   bytestring,
+                   distributed-process,
+                   network-transport,
+                   --
+                   network-transport-uphere
+                   
+                   

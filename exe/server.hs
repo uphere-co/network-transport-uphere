@@ -1,10 +1,9 @@
-import Control.Monad.Trans.Either
-
+import Control.Concurrent
+import Control.Exception
+-- import Control.Monad.Trans.Either
+import Data.Map
 import Network.Transport
 import Network.Transport.UpHere (createTransport, defaultTCPParameters, DualHostPortPair(..))
-import Control.Concurrent
-import Data.Map
-import Control.Exception
 import System.Environment
 
 main :: IO ()
