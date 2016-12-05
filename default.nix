@@ -1,5 +1,5 @@
-{ mkDerivation, base, bytestring, containers, data-accessor
-, network, network-transport, network-transport-tests, either
+{ mkDerivation, base, binary, bytestring, containers, data-accessor, distributed-process
+, network, network-simple, network-transport, network-transport-tests, stm, either
 , stdenv
 }:
 mkDerivation {
@@ -10,7 +10,7 @@ mkDerivation {
     base bytestring containers data-accessor network network-transport
   ];
   executableHaskellDepends = [
-    base network-transport either
+    base binary distributed-process network-simple network-transport either stm
   ];
   homepage = "http://haskell-distributed.github.com";
   description = "UpHere specific network transport";

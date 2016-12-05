@@ -5,19 +5,20 @@ let
   inherit (nixpkgs) pkgs;
 
   f = { mkDerivation, base, bytestring, containers, data-accessor
-      , network, network-transport, network-transport-tests, either
+      , network, network-simple, network-transport, network-transport-tests, either
       , stdenv
       , cabal-install
+      , distributed-process
       }:
       mkDerivation {
         pname = "network-transport-uphere";
         version = "0.0";
         src = ./.;
         libraryHaskellDepends = [
-          base bytestring containers data-accessor network network-transport
+          base bytestring containers data-accessor network network-simple network-transport
         ];
         executableHaskellDepends = [
-          base network-transport either
+          base network-transport either distributed-process
         ];
 	buildDepends = [ cabal-install ];
         homepage = "http://haskell-distributed.github.com";
