@@ -5,7 +5,8 @@ let
   inherit (nixpkgs) pkgs;
 
   f = { mkDerivation, base, bytestring, containers, data-accessor
-      , network, network-transport, network-transport-tests, stdenv
+      , network, network-transport, network-transport-tests, either
+      , stdenv
       , cabal-install
       }:
       mkDerivation {
@@ -15,8 +16,8 @@ let
         libraryHaskellDepends = [
           base bytestring containers data-accessor network network-transport
         ];
-        testHaskellDepends = [
-          base network network-transport network-transport-tests
+        executableHaskellDepends = [
+          base network-transport either
         ];
 	buildDepends = [ cabal-install ];
         homepage = "http://haskell-distributed.github.com";

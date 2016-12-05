@@ -1,5 +1,7 @@
+import Control.Monad.Trans.Either
+
 import Network.Transport
-import Network.Transport.UpHere (createTransport, defaultTCPParameters)
+import Network.Transport.UpHere (createTransport, defaultTCPParameters, DualHostPortPair(..))
 import Control.Concurrent
 import Data.Map
 import Control.Exception
@@ -7,14 +9,21 @@ import System.Environment
 
 main :: IO ()
 main = do
-  [host,port]     <- getArgs
+  [hostg,portg,hostl,portl]     <- getArgs
+  let dhpp = DHPP (hostg,portg) (hostl,portl)
   serverDone      <- newEmptyMVar
-  Right transport <- createTransport host port defaultTCPParameters
-  Right endpoint  <- newEndPoint transport
-  forkIO $ echoServer endpoint serverDone
-  putStrLn $ "Echo server started at " ++ show (address endpoint)
-  readMVar serverDone `onCtrlC` closeTransport transport
-
+  etransport <- createTransport dhpp defaultTCPParameters
+  case etransport of
+    Left err -> print err
+    Right transport -> do
+      eendpoint  <- newEndPoint transport
+      case eendpoint of
+        Left err' -> print err'
+        Right endpoint -> do
+          forkIO $ echoServer endpoint serverDone
+          putStrLn $ "Echo server started at " ++ show (address endpoint)
+          readMVar serverDone `onCtrlC` closeTransport transport
+  
 echoServer :: EndPoint -> MVar () -> IO ()
 echoServer endpoint serverDone = go empty
   where
