@@ -48,11 +48,11 @@ import Network.Transport
 import Network.Transport.UpHere.Internal
   ( forkServer
   , recvWithLength
-  , recvInt32
+  , recvWord32
   , tryCloseSocket
   )
 import Network.Transport.Internal
-  ( encodeInt32
+  ( encodeWord32
   , prependLength
   , mapIOException
   , tryIO
@@ -666,7 +666,7 @@ apiClose (ourEndPoint, theirEndPoint) connId connAlive =
             then do
               writeIORef connAlive False
               sched theirEndPoint $
-                sendOn vst [encodeInt32 CloseConnection, encodeInt32 connId]
+                sendOn vst [encodeWord32 ((fromIntegral . fromEnum) CloseConnection), encodeWord32 connId]
               return ( RemoteEndPointValid
                      . (remoteOutgoing ^: (\x -> x - 1))
                      $ vst
@@ -696,7 +696,7 @@ apiSend (ourEndPoint, theirEndPoint) connId connAlive payload =
           alive <- readIORef connAlive
           if alive
             then sched theirEndPoint $
-              sendOn vst (encodeInt32 connId : prependLength payload)
+              sendOn vst (encodeWord32 connId : prependLength payload)
             else throwIO $ TransportError SendClosed "Connection closed"
         RemoteEndPointClosing _ _ -> do
           alive <- readIORef connAlive
@@ -751,7 +751,7 @@ apiCloseEndPoint transport evs ourEndPoint =
             return closed
           RemoteEndPointValid vst -> do
             sched theirEndPoint $ do
-              void $ tryIO $ sendOn vst [ encodeInt32 CloseEndPoint ]
+              void $ tryIO $ sendOn vst [ encodeWord32 ((fromIntegral . fromEnum) CloseEndPoint)]
               -- Release probing resources if probing.
               forM_ (remoteProbing vst) id
               tryCloseSocket (remoteSocket vst)
@@ -791,14 +791,14 @@ handleConnectionRequest transport sock = handle handleException $ do
       N.setSocketOption sock N.KeepAlive 1
     forM_ (tcpUserTimeout $ transportParams transport) $
       N.setSocketOption sock N.UserTimeout
-    ourEndPointId <- recvInt32 sock
+    ourEndPointId <- recvWord32 sock
     theirAddress  <- EndPointAddress . BS.concat <$> recvWithLength sock
     let ourAddress = encodeEndPointAddress (transportDHPP transport) ourEndPointId
     ourEndPoint <- withMVar (transportState transport) $ \st -> case st of
       TransportValid vst ->
         case vst ^. localEndPointAt ourAddress of
           Nothing -> do
-            sendMany sock [encodeInt32 ConnectionRequestInvalid]
+            sendMany sock [encodeWord32 ((fromIntegral . fromEnum) ConnectionRequestInvalid)]
             throwIO $ userError "handleConnectionRequest: Invalid endpoint"
           Just ourEndPoint ->
             return ourEndPoint
@@ -816,7 +816,7 @@ handleConnectionRequest transport sock = handle handleException $ do
 
         if not isNew
           then do
-            void $ tryIO $ sendMany sock [encodeInt32 ConnectionRequestCrossed]
+            void $ tryIO $ sendMany sock [encodeWord32 ((fromIntegral . fromEnum) ConnectionRequestCrossed)]
             probeIfValid theirEndPoint
             tryCloseSocket sock
             return Nothing
@@ -831,7 +831,7 @@ handleConnectionRequest transport sock = handle handleException $ do
                         , _remoteMaxIncoming   = 0
                         , _remoteNextConnOutId = firstNonReservedLightweightConnectionId
                         }
-            sendMany sock [encodeInt32 ConnectionRequestAccepted]
+            sendMany sock [encodeWord32 ((fromIntegral . fromEnum) ConnectionRequestAccepted)]
             resolveInit (ourEndPoint, theirEndPoint) (RemoteEndPointValid vst)
             return (Just theirEndPoint)
       -- If we left the scope of the exception handler with a return value of
@@ -859,7 +859,7 @@ handleConnectionRequest transport sock = handle handleException $ do
               let params = transportParams transport
               void $ tryIO $ System.Timeout.timeout
                   (maybe (-1) id $ transportConnectTimeout params) $ do
-                sendMany (remoteSocket vst) [encodeInt32 ProbeSocket]
+                sendMany (remoteSocket vst) [encodeWord32 ((fromIntegral . fromEnum) ProbeSocket)]
                 threadDelay maxBound
               -- Discard the connection if this thread is not killed (i.e. the
               -- probe ack does not arrive on time).
@@ -913,21 +913,21 @@ handleIncomingMessages (ourEndPoint, theirEndPoint) = do
     -- exception thrown by 'recv'.
     go :: N.Socket -> IO ()
     go sock = do
-      lcid <- recvInt32 sock :: IO LightweightConnectionId
+      lcid <- recvWord32 sock :: IO LightweightConnectionId
       if lcid >= firstNonReservedLightweightConnectionId
         then do
           readMessage sock lcid
           go sock
         else
-          case tryToEnum (fromIntegral lcid) of
+          case tryToEnum ((fromIntegral . fromEnum) lcid) of
             Just CreatedNewConnection -> do
-              recvInt32 sock >>= createdNewConnection
+              recvWord32 sock >>= createdNewConnection
               go sock
             Just CloseConnection -> do
-              recvInt32 sock >>= closeConnection
+              recvWord32 sock >>= closeConnection
               go sock
             Just CloseSocket -> do
-              didClose <- recvInt32 sock >>= closeSocket sock
+              didClose <- recvWord32 sock >>= closeSocket sock
               unless didClose $ go sock
             Just CloseEndPoint -> do
               let closeRemoteEndPoint vst = do
@@ -953,7 +953,7 @@ handleIncomingMessages (ourEndPoint, theirEndPoint) = do
                 _                           -> return s
               tryCloseSocket sock
             Just ProbeSocket -> do
-              forkIO $ sendMany sock [encodeInt32 ProbeSocketAck]
+              forkIO $ sendMany sock [encodeWord32 ((fromIntegral . fromEnum) ProbeSocketAck)]
               go sock
             Just ProbeSocketAck -> do
               stopProbing
@@ -1059,8 +1059,8 @@ handleIncomingMessages (ourEndPoint, theirEndPoint) = do
                 removeRemoteEndPoint (ourEndPoint, theirEndPoint)
                 -- Attempt to reply (but don't insist)
                 act <- schedule theirEndPoint $ do
-                  void $ tryIO $ sendOn vst' [ encodeInt32 CloseSocket
-                                             , encodeInt32 (vst ^. remoteMaxIncoming)
+                  void $ tryIO $ sendOn vst' [ encodeWord32 ((fromIntegral . fromEnum) CloseSocket)
+                                             , encodeWord32 (vst ^. remoteMaxIncoming)
                                              ]
                   tryCloseSocket sock
                 return (RemoteEndPointClosed, Just act)
@@ -1213,7 +1213,7 @@ createConnectionTo params ourEndPoint theirAddress hints = do
               RemoteEndPointValid vst -> do
                 let connId = vst ^. remoteNextConnOutId
                 act <- schedule theirEndPoint $ do
-                  sendOn vst [encodeInt32 CreatedNewConnection, encodeInt32 connId]
+                  sendOn vst [encodeWord32 ((fromIntegral . fromEnum) CreatedNewConnection), encodeWord32 connId]
                   return connId
                 return ( RemoteEndPointValid
                        $ remoteNextConnOutId ^= connId + 1
@@ -1301,8 +1301,8 @@ closeIfUnused (ourEndPoint, theirEndPoint) = do
         then do
           resolved <- newEmptyMVar
           act <- schedule theirEndPoint $
-            sendOn vst [ encodeInt32 CloseSocket
-                       , encodeInt32 (vst ^. remoteMaxIncoming)
+            sendOn vst [ encodeWord32 ((fromIntegral . fromEnum) CloseSocket)
+                       , encodeWord32 (vst ^. remoteMaxIncoming)
                        ]
           return (RemoteEndPointClosing resolved vst, Just act)
         else
@@ -1693,9 +1693,9 @@ socketToEndPoint ourAddress'@(EndPointAddress ourAddress) theirAddress reuseAddr
           N.connect sock (N.addrAddress addr)
         mapIOException failed $ do
           sendMany sock
-                   (encodeInt32 theirEndPointId : prependLength [ourAddress])
-          recvInt32 sock
-      case tryToEnum response of
+                   (encodeWord32 theirEndPointId : prependLength [ourAddress])
+          recvWord32 sock
+      case tryToEnum ((fromIntegral . fromEnum) response) of
         Nothing -> throwIO (failed . userError $ "Unexpected response")
         Just r  -> return (sock, r)
   where
