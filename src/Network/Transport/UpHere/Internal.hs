@@ -3,7 +3,7 @@ module Network.Transport.UpHere.Internal
   ( forkServer
   , recvWithLength
   , recvExact
-  , recvInt32
+  , recvWord32
   , tryCloseSocket
   ) where
 
@@ -11,7 +11,7 @@ module Network.Transport.UpHere.Internal
 import Prelude hiding (catch)
 #endif
 
-import Network.Transport.Internal (decodeInt32, void, tryIO, forkIOWithUnmask)
+import Network.Transport.Internal (decodeWord32, void, tryIO, forkIOWithUnmask)
 
 import qualified Network.Socket as N
   ( HostName
@@ -41,7 +41,7 @@ import Control.Exception (SomeException, catch, bracketOnError, throwIO, mask_)
 import Control.Applicative ((<$>), (<*>))
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS (length, concat, null)
-import Data.Int (Int32)
+import Data.Word (Word32)
 import Data.ByteString.Lazy.Internal (smallChunkSize)
 
 -- | Start a server at the specified address.
@@ -101,11 +101,11 @@ forkServer host port backlog reuseAddr terminationHandler requestHandler = do
 
 -- | Read a length and then a payload of that length
 recvWithLength :: N.Socket -> IO [ByteString]
-recvWithLength sock = recvInt32 sock >>= recvExact sock
+recvWithLength sock = recvWord32 sock >>= recvExact sock
 
 -- | Receive a 32-bit integer
-recvInt32 :: Num a => N.Socket -> IO a
-recvInt32 sock = decodeInt32 . BS.concat <$> recvExact sock 4
+recvWord32 :: N.Socket -> IO Word32
+recvWord32 sock = decodeWord32 . BS.concat <$> recvExact sock 4
 
 -- | Close a socket, ignoring I/O exceptions
 tryCloseSocket :: N.Socket -> IO ()
@@ -117,12 +117,12 @@ tryCloseSocket sock = void . tryIO $
 -- Throws an I/O exception if the socket closes before the specified
 -- number of bytes could be read
 recvExact :: N.Socket                -- ^ Socket to read from
-          -> Int32                   -- ^ Number of bytes to read
+          -> Word32                   -- ^ Number of bytes to read
           -> IO [ByteString]
 recvExact _ len | len < 0 = throwIO (userError "recvExact: Negative length")
 recvExact sock len = go [] len
   where
-    go :: [ByteString] -> Int32 -> IO [ByteString]
+    go :: [ByteString] -> Word32 -> IO [ByteString]
     go acc 0 = return (reverse acc)
     go acc l = do
       bs <- NBS.recv sock (fromIntegral l `min` smallChunkSize)
