@@ -1,37 +1,50 @@
-{ nixpkgs ? import <nixpkgs> {}, compiler ? "default" }:
+{ revision }:
+
+with revision;
+
+let pkgs0 = import nixpkgs { config.allowUnfree = true; };
+
+    pkgs = import pkgs0.path {
+                overlays = [ (self: super: {
+                               libsvm = import (uphere-nix-overlay + "/nix/cpp-modules/libsvm/default.nix") { inherit (self) stdenv fetchurl; };
+                             })
+                           ];
+              };
+in
+
+with pkgs;
 
 let
 
-  inherit (nixpkgs) pkgs;
+  fasttext = import (uphere-nix-overlay + "/nix/cpp-modules/fasttext.nix") { inherit stdenv fetchgit; };
+  res_corenlp = import (uphere-nix-overlay + "/nix/linguistic-resources/corenlp.nix") {
+    inherit fetchurl fetchzip srcOnly;
+  };
+  corenlp = res_corenlp.corenlp;
+  corenlp_models = res_corenlp.corenlp_models;
 
-  f = { mkDerivation, base, bytestring, containers, data-accessor
-      , network, network-simple, network-transport, network-transport-tests, either
-      , stdenv
-      , cabal-install
-      , distributed-process
-      }:
-      mkDerivation {
-        pname = "network-transport-uphere";
-        version = "0.0";
-        src = ./.;
-        libraryHaskellDepends = [
-          base bytestring containers data-accessor network network-simple network-transport
-        ];
-        executableHaskellDepends = [
-          base network-transport either distributed-process
-        ];
-	buildDepends = [ cabal-install ];
-        homepage = "http://haskell-distributed.github.com";
-        description = "UpHere specific network transport";
-        license = stdenv.lib.licenses.bsd3;
-      };
+  hsconfig = lib.callPackageWith (pkgs//revision)
+               (uphere-nix-overlay + "/nix/haskell-modules/configuration-semantic-parser-api.nix") {
+                 inherit corenlp corenlp_models fasttext;
+               };
 
-  haskellPackages = if compiler == "default"
-                       then pkgs.haskellPackages
-                       else pkgs.haskell.packages.${compiler};
 
-  drv = haskellPackages.callPackage f {};
+  newHaskellpkgs = haskellPackages.override { overrides = hsconfig; };
+
+  hsenv = newHaskellpkgs.ghcWithPackages (p: with p; [
+            network-transport
+            distributed-process
+            lens
+            either
+            network
+            network-simple
+          ]);
 
 in
 
-  if pkgs.lib.inNixShell then drv.env else drv
+stdenv.mkDerivation {
+  name = "network-transport-uphere-dev";
+  buildInputs = [ hsenv ];
+  shellHook = ''
+  '';
+}
